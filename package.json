@@ -1,0 +1,23 @@
+{
+  "name": "mysql-and-node-store",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bamazonCustomer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nmsb10/mysql-and-node-store.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nmsb10/mysql-and-node-store/issues"
+  },
+  "homepage": "https://github.com/nmsb10/mysql-and-node-store#readme",
+  "dependencies": {
+    "inquirer": "^2.0.0",
+    "mysql": "^2.12.0"
+  }
+}
