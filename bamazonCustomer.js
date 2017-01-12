@@ -52,10 +52,11 @@ function customerView(){
 					searchAgain();
 				}else{
 					var updatedQuantity = response[0].stock_quantity - answers.units;
-					var totalCost = answers.units * response[0].price;
+					var priceCharged = response[0].price;
+					var totalCost = answers.units * priceCharged;
 					connection.query('UPDATE products SET stock_quantity = ? WHERE item_id = ?', [updatedQuantity, answers.productID], function(err, response){
 						if(err) throw err;
-						console.log('We have enough items to fulfill your order. Here\'s your total: $' + totalCost);
+						console.log('We have enough items to fulfill your order. Here\'s your total: ' + answers.units + ' * ' + '$' + priceCharged + ' = $' + totalCost);
 						searchAgain();
 					});
 				}

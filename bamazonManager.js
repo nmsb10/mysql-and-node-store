@@ -32,92 +32,16 @@ function managerView(){
 	}).then(function(decision){
 		switch(decision.request){
 			case 'view products for sale':
-			// If a manager selects View Products for Sale, the app should list every available item: the item IDs, names, prices, and quantities.
-				connection.query('SELECT * FROM products', function(err, response){
-					if(err) throw err;
-					for(var i = 0; i<response.length; i++){
-						var twoDigitID = '0';
-						if(response[i].item_id<10){
-							twoDigitID += response[i].item_id;
-						}else{
-							twoDigitID = response[i].item_id;
-						}
-						console.log('product ID: ' + twoDigitID + ' | product: ' + response[i].product_name + ' | qty avail: ' + response[i].stock_quantity + ' | price: $' + response[i].price);
-					}
-					searchAgain();
-				});
+				viewProducts();
 				break;
 			case 'view low inventory':
-				// If a manager selects View Low Inventory, then it should list all items with a inventory count lower than five.
-				inquirer.prompt([
-				{
-					type: 'input',
-					name: 'maxQuantity',
-					message: 'Please specify the maximum inventory quantity to search: ',
-					default: 5,
-					validate: function(value) {
-						//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
-						return isNaN(value) ? 'Please enter a valid quantity.' : true;
-					}
-				}]).then(function(inventory){
-					connection.query('SELECT * FROM products WHERE stock_quantity <= ?', [inventory.maxQuantity], function(error, response){
-						if(error) throw error;
-						console.log('Here are the products currently with stock quantity of ' + inventory.maxQuantity + ' or lower:');
-						for(var i = 0; i < response.length; i++){
-							var twoDigitID = '0';
-							if(response[i].item_id<10){
-								twoDigitID += response[i].item_id;
-							}else{
-								twoDigitID = response[i].item_id;
-							}
-							console.log('product ID: ' + twoDigitID + ' | qty avail: ' + response[i].stock_quantity + ' | product: ' + response[i].product_name  + ' | price: $' + response[i].price);
-						}
-						searchAgain();
-					});
-				});
+				viewLowInventory();
 				break;
 			case 'add to inventory':
-				// If a manager selects Add to Inventory, your app should display a prompt that will let the manager "add more" of any item currently in the store.
-				connection.query('SELECT * FROM products', function(err, response){
-					if(err) throw err;
-					//create an array with all items in inventory
-					var inventoryArray = [];
-					for(var i = 0; i<response.length; i++){
-						var item = 'product ID: ' + response[i].item_id + ' | product: ' + response[i].product_name + ' | qty avail: ' + response[i].stock_quantity + ' | price: $' + response[i].price;
-						inventoryArray.push(item);
-					}
-					inquirer.prompt([
-					{
-						type: 'list',
-						name: 'addMore',
-						message: 'Please select the item for which you will increase inventory:',
-						choices: inventoryArray
-					},
-					{
-						type: 'input',
-						name: 'quantity',
-						message: 'Please specify the quantity to increase inventory for this item: ',
-						validate: function(value) {
-							//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
-							return isNaN(value) ? 'Please enter a valid quantity.' : true;
-						}	
-					}]).then(function(choice){
-						//console.log(choice.addMore);
-						//console.log(choice.addMore.indexOf(' |'));
-						//this space will be at position 13 of the string if 1 digit number
-						//index 14 if 2 digit number
-						//index 15 if 3 digit number
-						//create variable parseInt from string splice to represent item_id
-						var itemNumber = parseInt(choice.addMore.slice(12,choice.addMore.indexOf(' |')));
-						console.log('item number: ' + itemNumber);
-						console.log(typeof itemNumber);
-						//UPDATE database_name SET specific_column_name = valueToSet WHERE primarykey_column_name = particularValue
-						searchAgain();
-					});
-				});				
+				addToInventory();
 				break;
 			case 'add a new product':
-				// If a manager selects Add New Product, it should allow the manager to add a completely new product to the store.
+				addANewProduct();
 				break;
 			default:
 				console.log('unknown request. try again.');
@@ -126,161 +50,171 @@ function managerView(){
 	});
 }
 
+function viewProducts(){
+	// If a manager selects View Products for Sale, the app should list every available item: the item IDs, names, prices, and quantities.
+	connection.query('SELECT * FROM products', function(err, response){
+		if(err) throw err;
+		for(var i = 0; i<response.length; i++){
+			var twoDigitID = '0';
+			if(response[i].item_id<10){
+				twoDigitID += response[i].item_id;
+			}else{
+				twoDigitID = response[i].item_id;
+			}
+			console.log('product ID: ' + twoDigitID + ' | product: ' + response[i].product_name + ' | qty avail: ' + response[i].stock_quantity + ' | price: $' + response[i].price);
+		}
+		searchAgain();
+	});
+}
+
+function viewLowInventory(){
+	// If a manager selects View Low Inventory, then it should list all items with a inventory count lower than five.
+	inquirer.prompt([
+	{
+		type: 'input',
+		name: 'maxQuantity',
+		message: 'Please specify the maximum inventory quantity to search: ',
+		default: 5,
+		validate: function(value) {
+			//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
+			return isNaN(value) ? 'Please enter a valid quantity.' : true;
+		}
+	}]).then(function(inventory){
+		connection.query('SELECT * FROM products WHERE stock_quantity <= ?', [inventory.maxQuantity], function(error, response){
+			if(error) throw error;
+			console.log('Here are the products currently with stock quantity of ' + inventory.maxQuantity + ' or lower:');
+			for(var i = 0; i < response.length; i++){
+				var twoDigitID = '0';
+				if(response[i].item_id<10){
+					twoDigitID += response[i].item_id;
+				}else{
+					twoDigitID = response[i].item_id;
+				}
+				console.log('product ID: ' + twoDigitID + ' | qty avail: ' + response[i].stock_quantity + ' | product: ' + response[i].product_name  + ' | price: $' + response[i].price);
+			}
+			searchAgain();
+		});
+	});
+}
+
+function addToInventory(){
+	// If a manager selects Add to Inventory, your app should display a prompt that will let the manager "add more" of any item currently in the store.
+	connection.query('SELECT * FROM products', function(err, response){
+		if(err) throw err;
+		//create an array with all items in inventory
+		var inventoryArray = [];
+		for(var i = 0; i<response.length; i++){
+			var item = 'product ID: ' + response[i].item_id + ' | product: ' + response[i].product_name + ' | qty avail: ' + response[i].stock_quantity + ' | price: $' + response[i].price;
+			inventoryArray.push(item);
+		}
+		inquirer.prompt([
+		{
+			type: 'list',
+			name: 'addMore',
+			message: 'Please select the item for which you will increase inventory:',
+			choices: inventoryArray
+		},
+		{
+			type: 'input',
+			name: 'quantity',
+			message: 'Please specify the quantity to increase inventory for this item: ',
+			validate: function(value) {
+				//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
+				return isNaN(value) ? 'Please enter a valid quantity.' : true;
+			}	
+		}]).then(function(choice){
+			//console.log(choice.addMore.indexOf(' |'));
+			//this space will be at index 13 of the string if 1 digit number
+			//index 14 if 2 digit number
+			//index 15 if 3 digit number
+			//create variable parseInt from string splice to represent item_id
+			var itemNumber = parseInt(choice.addMore.slice(12,choice.addMore.indexOf(' |')));
+			//console.log('item number: ' + itemNumber);
+			connection.query('SELECT * FROM products WHERE item_id = ?', [itemNumber], function(err, response){
+				if(err) throw err;
+				var updatedQuantity = parseInt(response[0].stock_quantity) + parseInt(choice.quantity);
+				connection.query('UPDATE products SET stock_quantity = ? WHERE item_id = ?', [updatedQuantity, itemNumber], function(error, response){
+					if(error) throw error;
+					console.log('confirm quantity updated:');
+					connection.query('SELECT * FROM products WHERE item_id = ?', [itemNumber], function(err, response){
+						if(err) throw error;
+						console.log('product ID: ' + response[0].item_id + ' | product: ' + response[0].product_name + ' | QTY AVAIL: ' + response[0].stock_quantity + ' | price: $' + response[0].price);
+						searchAgain();
+					});
+				});
+			});
+		});
+	});			
+}
+
+function addANewProduct(){
+	// If a manager selects Add New Product, it should allow the manager to add a completely new product to the store.
+	inquirer.prompt([
+	{
+		type: 'input',
+		name: 'name',
+		message: 'product name: '
+	},
+	{
+		type: 'input',
+		name: 'stockQuantity',
+		message: 'initial stock quantity: ',
+		validate: function(value) {
+			//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
+			return isNaN(value) ? 'Please enter a valid quantity.' : true;
+		}
+	},
+	{
+		type: 'input',
+		name: 'price',
+		message: 'product price: '
+		//should validate price is a float
+	},
+	{
+		type: 'input',
+		name: 'department',
+		message: 'department name: '
+	},
+	{
+		type: 'confirm',
+		name: 'enterProduct',
+		message: 'create a new product with the information you entered?'
+	},
+	{
+		type: 'confirm',
+		name: 'addAnotherProduct',
+		message: 'would you like to add another product?'
+	}]).then(function(input){
+		if(input.enterProduct && input.addAnotherProduct){
+			connection.query('INSERT INTO products (product_name, stock_quantity, price, department_name) VALUES (?, ?, ?, ?)', [input.name, input.stockQuantity, input.price, input.department], function(err, response){
+				if(err) throw err;
+				console.log('confirm product added: ' + input.name + ' | ' + input.stockQuantity + ' units | $' +  input.price + ' | department: ' +  input.department);
+				addANewProduct();
+			});
+		}else if(!input.enterProduct && input.addAnotherProduct){
+			addANewProduct();
+		}else if(input.enterProduct && !input.addAnotherProduct){
+			connection.query('INSERT INTO products (product_name, stock_quantity, price, department_name) VALUES (?, ?, ?, ?)', [input.name, input.stockQuantity, input.price, input.department], function(err, response){
+				if(err) throw err;
+				console.log('new product added');
+				console.log('confirm product added: ' + input.name + ' | ' + input.stockQuantity + ' units | $' +  input.price + ' | department: ' +  input.department);
+				searchAgain();
+			});
+		}else if(!input.enterProduct && !input.addAnotherProduct){
+			searchAgain();
+		}
+	});
+}
+
 
 // If you finished Challenge #2 and put in all the hours you were willing to spend on this activity, then rest easy! Otherwise continue to the next and final challenge.
-// 	connection.query('SELECT * FROM products', function(err, response){
-// 		if(err) throw err;
-// 		for(var i = 0; i<response.length; i++){
-// 			var twoDigitID = '0';
-// 			if(response[i].item_id<10){
-// 				twoDigitID += response[i].item_id;
-// 			}else{
-// 				twoDigitID = response[i].item_id;
-// 			}
-// 			// console.log(response[i].item_id + ' | dept: ' + response[i].department_name + ' | product: ' + response[i].product_name + ' | qty avail: ' + response[i].stock_quantity + ' | price: $' + response[i].price);
-// 			console.log('product ID: ' + twoDigitID + ' | product: ' + response[i].product_name + ' | qty avail: ' + response[i].stock_quantity + ' | price: $' + response[i].price);
-// 		}
-// 		inquirer.prompt([
-// 		{
-// 			type: 'input',
-// 			name: 'productID',
-// 			message: 'Please specify the product ID of the item you wish to purchase: '
-// 		},
-// 		{
-// 			type: 'input',
-// 			name: 'units',
-// 			message: 'How many units do you wish to purchase?'
-// 		}]).then(function(answers){
-// 			connection.query('SELECT * FROM products WHERE item_id = ?', [answers.productID], function(err, response){
-// 				if(err) throw err;
-// 				//remember: even if response.length === 1, you must still specify you want array[0]
-// 				if(answers.units > response[0].stock_quantity){
-// 					console.log('Apologies. We currently have only ' + response[0].stock_quantity + ' units of: ' + response[0].product_name + '.');
-// 					console.log('You requested ' + answers.units + ' items.');
-// 					searchAgain();
-// 				}else{
-// 					var updatedQuantity = response[0].stock_quantity - answers.units;
-// 					var totalCost = answers.units * response[0].price;
-// 					connection.query('UPDATE products SET stock_quantity = ? WHERE item_id = ?', [updatedQuantity, answers.productID], function(err, response){
-// 						if(err) throw err;
-// 						console.log('We have enough items to fulfill your order. Here\'s your total: $' + totalCost);
-// 						searchAgain();
-// 					});
-// 				}
-// 			});
-// 		});
-// 	});
-// }
-
-// function searchSongs(){
-// inquirer.prompt({
-// 	type: 'list',
-// 	name: 'userRequest',
-// 	message: 'Welcome. What brings you to searchSongs today?',
-// 	choices: [
-// 	'search an artist',
-// 	'search for multiple winning artists',
-// 	'search songs within a range',
-// 	'search for a specific song'
-// 	]
-// }).then(function(decision){
-// 	if(decision.userRequest === 'search an artist'){
-// 		//A query which returns all data for songs sung by a specific artist
-// 		inquirer.prompt([
-// 		{
-// 			type: 'input',
-// 			name: 'artist',
-// 			message: 'search for songs by which artist?',
-// 		}]).then(function(answer){
-// 			//var query = 'SELECT position song year FROM top5000 WHERE artist ?'
-// 			//connection.query(query, {artist: answer.artist}, function(err, response){
-// 			connection.query('SELECT * FROM top5000 WHERE artist = ?', [answer.artist], function(err, response){
-// 				if(err) throw err;
-// 				var artists = [];
-// 				console.log('results for ' + answer.artist + ':');
-// 				for(var i = 0; i<response.length; i++){
-// 					//individualResult.concat('', response[i].song, ' | year: ', response[i].year, ' | millions of albums: ', response[i].raw_total);
-// 					console.log(response[i].song + ' | year: ' + response[i].year + ' | millions of albums: ' + response[i].raw_total);
-// 					// artists.push(individualResult);
-// 				}
-// 				// console.log('results for ' + answer.artist + ':');
-// 				//console.log(artists);
-// 				searchAgain();
-// 			});
-// 		});
-// 	}else if(decision.userRequest === 'search for multiple winning artists'){
-// 		//returns all artists who appear within the top 5000 more than once
-// 		//remember: the results are returned as an array of RowDataPacket objects
-// 		inquirer.prompt([
-// 		{
-// 			type: 'input',
-// 			name: 'artistsMultiple',
-// 			message: 'do you have a minimum number of appearances?',
-// 			default: 10
-// 		}]).then(function(answer){
-// 			connection.query('SELECT * FROM top5000 GROUP BY artist HAVING count(*) >= ?', [answer.artistsMultiple], function(err, response){
-// 				if(err) throw err;
-// 				console.log('these artists appeared more than ' + answer.artistsMultiple + ' times:');
-// 				for(var i = 0; i<response.length; i++){
-// 					console.log('artist: ' + response[i].artist + ' | position: '+ response[i].position + ' | year: ' + response[i].year + ' | millions of albums: ' + response[i].raw_total);
-// 				}
-// 				searchAgain();
-// 			});
-// 		});
-// 	}else if(decision.userRequest === 'search songs within a range'){
-// 		//returns all data contained within a specific range
-// 		inquirer.prompt([
-// 		{
-// 			type: 'input',
-// 			name: 'rangeLower',
-// 			message: 'what is the beginning position?'
-// 		},
-// 		{
-// 			type: 'input',
-// 			name: 'rangeUpper',
-// 			message: 'what is the end position?'
-// 		}]).then(function(answers){
-// 			connection.query('SELECT * FROM top5000 WHERE position BETWEEN ? AND ?', [answers.rangeLower, answers.rangeUpper], function(err, response){
-// 				if(err) throw err;
-// 				console.log('here are the entries between position ' + answers.rangeLower + ' and ' + answers.rangeUpper);
-// 				for(var i = 0; i<response.length; i++){
-// 					console.log(response[i].position + ' | artist: ' + response[i].artist + ' | ' + response[i].song + ' | year: ' + response[i].year + ' | millions of albums: ' + response[i].raw_total);
-// 				}
-// 				searchAgain();
-// 			});
-// 		});
-// 	}else if(decision.userRequest === 'search for a specific song'){
-// 		//A query which searches for a specific song in the top 5000 and
-// 		//returns the data for it
-// 		inquirer.prompt([
-// 		{
-// 			type: 'input',
-// 			name: 'song',
-// 			message: 'which song would you like to search?',
-// 		}]).then(function(answer){
-// 			connection.query('SELECT * FROM top5000 WHERE song = ?', [answer.song], function(err, response){
-// 				if(err) throw err;
-// 				console.log('results for ' + answer.song + ':');
-// 				if(response.length === 0){
-// 					console.log('sorry, ' + answer.song + ' not found :(');
-// 				}else{
-// 					for(var i = 0; i<response.length; i++){
-// 						console.log('song title: ' + response[i].song + ' | artist: ' + response[i].artist + ' | position: '+ response[i].position + ' | year: ' + response[i].year + ' | millions of albums: ' + response[i].raw_total);
-// 					}
-// 				}
-// 				searchAgain();
-// 			});
-// 		});
-// 	}
-// });
-// }
 
 function searchAgain(){
 	inquirer.prompt([
 	{
 		type: 'confirm',
 		name: 'searchAgain',
-		message: 'would you like to conduct another search?',
+		message: 'would you like to conduct another task?',
 	}]).then(function(answer){
 		if(answer.searchAgain){
 			managerView();
