@@ -21,6 +21,7 @@ What to install and how
 - pull this repository to your computer
 - because I created the package.json file, in your bash simply navigate to where you pulled the repository and type: npm install
 - this will install the node_modules required
+- don't forget to insert your own credentials for the mysql connection
 ```
 
 ## Review of the code
@@ -224,17 +225,31 @@ connection.query('INSERT INTO products (product_name, stock_quantity, price, dep
 
 ### supervisor
 
-
-
-
+The view department sales function utilized the cli-table's amazing ability to specify the appearance of the table. Then simply push the column names, then each of the departments and their corresponding data as rows into the table array.
 ```
-function awesomeThing() {
-    //...
-    // try not to make it too long otherwise, point to filepaths:line numbers
-    //...
+function viewDeptSales(){
+	var table = new Table({
+		chars: { 'top': '═' , 'top-mid': '╤' , 'top-left': '╔' , 'top-right': '╗',
+		'bottom': '═' , 'bottom-mid': '╧' , 'bottom-left': '╚' , 'bottom-right': '╝',
+		'left': '║' , 'left-mid': '╟' , 'mid': '─' , 'mid-mid': '┼',
+		'right': '║' , 'right-mid': '╢' , 'middle': '│' }
+	});
+	connection.query('SELECT * FROM departments', function(error, response){
+		if(error) throw error;
+		table.push(['dept. ID', 'dept. name', 'overhead costs', 'total sales', 'profit']);
+		for (var i = 0; i< response.length; i++){
+			var profit = (response[i].total_sales - response[i].over_head_costs).toFixed(2);
+			table.push([response[i].department_id, response[i].department_name, response[i].over_head_costs, response[i].total_sales, '$'+ profit]);
+		}
+		console.log(table.toString());
+		searchAgain();
+	});
 }
 ```
-Video link to a "light" demonstration of this application available upon request.
+
+When the supervisor wants to create a new department, don't forget to check whether or not the department already exists...
+
+Video link to a "light" demonstration of this application available upon request. Not all edge cases examined in this video, although a supplemental video with additional code inspection and discussion of possible bugs may be offered if necessary. However the current commit represents an earnest attempt to address all reasonable bugs. Thank you for reading. Your suggestion(s) is/are always welcome.
 
 ## Authors
 
