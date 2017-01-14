@@ -36,12 +36,23 @@ function customerView(){
 		{
 			type: 'input',
 			name: 'productID',
-			message: 'Please specify the product ID of the item you wish to purchase: '
+			message: 'Please specify the product ID of the item you wish to purchase: ',
+			validate: function(requestedID){
+				for(var i = 0; i<response.length; i++){
+					if(requestedID == parseInt(response[i].item_id)){
+						return true;
+					}
+				}
+				return 'Please enter a valid product ID.';
+			}
 		},
 		{
 			type: 'input',
 			name: 'units',
-			message: 'How many units do you wish to purchase?'
+			message: 'How many units do you wish to purchase?',
+			validate: function(requestedUnits){
+				return parseInt(requestedUnits) >= 0 ? true : 'Please enter a valid number of units.';
+			}
 		}]).then(function(answers){
 			connection.query('SELECT * FROM products WHERE item_id = ?', [answers.productID], function(err, response){
 				if(err) throw err;
@@ -51,13 +62,29 @@ function customerView(){
 					console.log('You requested ' + answers.units + ' items.');
 					searchAgain();
 				}else{
-					var updatedQuantity = response[0].stock_quantity - answers.units;
+					var updatedQuantity = response[0].stock_quantity - parseInt(answers.units);
 					var priceCharged = response[0].price;
-					var totalCost = answers.units * priceCharged;
-					connection.query('UPDATE products SET stock_quantity = ? WHERE item_id = ?', [updatedQuantity, answers.productID], function(err, response){
+					var departmentSelected = response[0].department_name;
+					var totalCost = parseInt(answers.units) * priceCharged;
+					var updatedProductSales = response[0].product_sales + totalCost;
+					// connection.query('UPDATE products SET product_sales = ? WHERE item_id = ?', [updatedProductSales, answers.productID], function(err, response){
+					// 	if(err) throw err;
+					// 	console.log('total product sales now: ' + updatedProductSales);
+					// });
+					//once a purchase is deemed possible, for the particular item, update remaining quantity, and update total sales of this product
+					connection.query('UPDATE products SET stock_quantity = ?, product_sales = ? WHERE item_id = ?', [updatedQuantity, updatedProductSales, answers.productID], function(err, response){
 						if(err) throw err;
-						console.log('We have enough items to fulfill your order. Here\'s your total: ' + answers.units + ' * ' + '$' + priceCharged + ' = $' + totalCost);
-						searchAgain();
+						console.log('We have enough items to fulfill your order. Here\'s your total: ' + parseInt(answers.units) + ' * ' + '$' + priceCharged + ' = $' + totalCost);
+						//add the total purchase amount to the appropriate total_sales entry for the department of the item purchased
+						//first need to run a query to obtain the total sales for the appropriate department
+						connection.query('SELECT total_sales FROM departments WHERE department_name = ?', [departmentSelected], function(error, response){
+							if (error) throw error;
+							var updatedDeptSales = response[0].total_sales + totalCost;
+							connection.query('UPDATE departments SET total_sales = ? WHERE department_name = ?',[updatedDeptSales, departmentSelected], function(error, response){
+								if(error) throw error;
+								searchAgain();
+							});
+						});
 					});
 				}
 			});

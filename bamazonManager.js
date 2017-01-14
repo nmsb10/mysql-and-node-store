@@ -27,7 +27,8 @@ function managerView(){
 		'view products for sale',
 		'view low inventory',
 		'add to inventory',
-		'add a new product'
+		'add a new product',
+		'delete a product'
 		]
 	}).then(function(decision){
 		switch(decision.request){
@@ -42,6 +43,9 @@ function managerView(){
 				break;
 			case 'add a new product':
 				addANewProduct();
+				break;
+			case 'delete a product':
+				deleteProduct();
 				break;
 			default:
 				console.log('unknown request. try again.');
@@ -161,14 +165,22 @@ function addANewProduct(){
 		message: 'initial stock quantity: ',
 		validate: function(value) {
 			//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
-			return isNaN(value) ? 'Please enter a valid quantity.' : true;
+			//return isNaN(value) ? 'Please enter a valid quantity.' : true;
+			if(value > 0 && parseInt(value)){
+				return true;
+			}else{
+				return 'Please enter a valid quantity.';
+			}
 		}
 	},
 	{
 		type: 'input',
 		name: 'price',
-		message: 'product price: '
+		message: 'product price (no commas): ',
 		//should validate price is a float
+		validate: function(value) {
+			return parseFloat(value) && value > 0 ? true : 'Please enter a valid price.';
+		}
 	},
 	{
 		type: 'input',
@@ -186,7 +198,7 @@ function addANewProduct(){
 		message: 'would you like to add another product?'
 	}]).then(function(input){
 		if(input.enterProduct && input.addAnotherProduct){
-			connection.query('INSERT INTO products (product_name, stock_quantity, price, department_name) VALUES (?, ?, ?, ?)', [input.name, input.stockQuantity, input.price, input.department], function(err, response){
+			connection.query('INSERT INTO products (product_name, stock_quantity, price, department_name) VALUES (?, ?, ?, ?)', [input.name, input.stockQuantity, input.price, input.department.toLowerCase()], function(err, response){
 				if(err) throw err;
 				console.log('confirm product added: ' + input.name + ' | ' + input.stockQuantity + ' units | $' +  input.price + ' | department: ' +  input.department);
 				addANewProduct();
@@ -206,8 +218,37 @@ function addANewProduct(){
 	});
 }
 
-
-// If you finished Challenge #2 and put in all the hours you were willing to spend on this activity, then rest easy! Otherwise continue to the next and final challenge.
+function deleteProduct(){
+	connection.query('SELECT * FROM products', function(err, response){
+		if(err) throw err;
+		//create an array with all items in inventory
+		var inventoryArray = [];
+		for(var i = 0; i<response.length; i++){
+			var item = 'product ID: ' + response[i].item_id + ' | product: ' + response[i].product_name + ' | qty avail: ' + response[i].stock_quantity + ' | price: $' + response[i].price;
+			inventoryArray.push(item);
+		}
+		inquirer.prompt(
+		{
+			type: 'list',
+			name: 'delete',
+			message: 'Please select the item you wish to delete:',
+			choices: inventoryArray
+		}).then(function(choice){
+			//console.log(choice.addMore.indexOf(' |'));
+			//this space will be at index 13 of the string if 1 digit number
+			//index 14 if 2 digit number
+			//index 15 if 3 digit number
+			//create variable parseInt from string splice to represent item_id
+			var itemNumber = parseInt(choice.delete.slice(12,choice.delete.indexOf(' |')));
+			//console.log('item number: ' + itemNumber);
+			connection.query('DELETE FROM products WHERE item_id = ?', [itemNumber], function(err, response){
+				if(err) throw err;
+				console.log('Success. You deleted product ' + itemNumber + '.');
+				searchAgain();
+			});
+		});
+	});
+}
 
 function searchAgain(){
 	inquirer.prompt([
@@ -244,20 +285,8 @@ function searchAgain(){
 //screenshots or a link to a video in a README.md file.
 // If you haven't written a markdown file yet, click here for a
 //rundown, or just take a look at the raw file of these instructions.
-// Instructions:
 
-// Create a new Node application called bamazonManager.js. Running
-//this application will:
-// List a set of menu options:
-// View Products for Sale
-// View Low Inventory
-// Add to Inventory
-// Add New Product
-// If a manager selects View Products for Sale, the app should list every available item: the item IDs, names, prices, and quantities.
-// If a manager selects View Low Inventory, then it should list all items with a inventory count lower than five.
-// If a manager selects Add to Inventory, your app should display a prompt that will let the manager "add more" of any item currently in the store.
-// If a manager selects Add New Product, it should allow the manager to add a completely new product to the store.
-// If you finished Challenge #2 and put in all the hours you were willing to spend on this activity, then rest easy! Otherwise continue to the next and final challenge.
+
 // Challenge #3: Supervisor View (Final Level)
 
 // Create a new MySQL table called departments. Your table should include the following columns:
@@ -268,9 +297,14 @@ function searchAgain(){
 // * over_head_costs (A dummy number you set for each department)
 
 // * total_sales
-// Modify the products table so that theres a product_sales column and modify the bamazonCustomer.js app so that this value is updated with each individual products total revenue from each sale.
-// Modify your bamazonCustomer.js app so that when a customer purchases anything from the store, the program will calculate the total sales from each transaction.
-// Add the revenue from each transaction to the total_sales column for the related department.
+// Modify the products table so that theres a product_sales column and
+//modify the bamazonCustomer.js app so that this value is updated with
+//each individual products total revenue from each sale.
+// Modify your bamazonCustomer.js app so that when a customer purchases
+//anything from the store, the program will calculate the total sales
+//from each transaction.
+// Add the revenue from each transaction to the total_sales column for
+//the related department.
 // Make sure your app still updates the inventory listed in the products column.
 // Create another Node app called bamazonSupervisor.js. Running this application will list a set of menu options:
 // View Product Sales by Department
@@ -284,4 +318,3 @@ function searchAgain(){
 // * Hint: You may need to look into aliases in MySQL.
 
 // * **HINT**: There may be an NPM package that can log the table to the console. What's is it? Good question :)
-// One More Thing

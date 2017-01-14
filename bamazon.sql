@@ -27,3 +27,28 @@ VALUES ('rock', 'pets', 5.95, 15),
 ('ginger root', 'vegetables', 1.59, 8),
 ('custom suit made for you in Italy', 'experiences', 32500, 2),
 ('your life purpose explained to you by a professional', 'experiences', 80000, 5);
+
+-- =====================================
+
+CREATE TABLE departments (
+  department_id INT(9) AUTO_INCREMENT NOT NULL,
+  department_name VARCHAR(100) NOT NULL,
+  over_head_costs INT(10) NOT NULL default 0,
+  total_sales DECIMAL(12,2) NOT NULL default 0.00,
+  PRIMARY KEY (department_id)
+);
+
+ALTER TABLE products ADD product_sales DECIMAL(12,2) default 0.00;
+
+INSERT INTO departments(department_name, over_head_costs) VALUES
+('artwork', 7000),
+('booze', 10000),
+('clothing', 5000),
+('electronics',35000),
+('experiences',50000),
+('fruits',3500),
+('garden',7800),
+('grocery', 13800),
+('office supplies', 2500),
+('pets', 8000),
+('vegetables', 3500);
