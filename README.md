@@ -196,7 +196,7 @@ If the manager wants to view low inventory:
 connection.query('SELECT * FROM products WHERE stock_quantity <= ?', [inventory.maxQuantity], function(error, response){
 ```
 
-When the manager wans to add inventory for a particular product:
+When the manager desires to add inventory for a particular product:
 ```
 connection.query('SELECT * FROM products WHERE item_id = ?', [itemNumber], function(err, response){
 	if(err) throw err;
