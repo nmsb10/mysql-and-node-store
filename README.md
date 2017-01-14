@@ -51,7 +51,7 @@ VALUES ('rock', 'pets', 5.95, 15),
 
 ### customer
 
-First create a mysql connection:
+First create a mysql connection, and use the Bamazon database you just created (above):
 ```
 var connection = mysql.createConnection({
 	host: 'localhost',
@@ -74,10 +74,53 @@ Then display all items from the products table:
 ```
 function customerView(){
 	connection.query('SELECT * FROM products', function(err, response){
+	...
+	console.log('product ID: ' + response[i].item_id + ' | product: ' + response[i].product_name + ' | qty avail: ' + response[i].stock_quantity + ' | price: $' + response[i].price);
 ```
 
+Use inquirer to allow the user to submit their requested product ID and amount they wish to purchase:
+```
+inquirer.prompt([
+{
+	type: 'input',
+	name: 'productID',
+	message: 'Please specify the product ID of the item you wish to purchase: ',
+	validate: function(requestedID){
+		for(var i = 0; i<response.length; i++){
+			if(parseInt(requestedID) === parseInt(response[i].item_id)){
+				return true;
+			}
+		}
+		return 'Please enter a valid product ID.';
+	}
+},
+{
+	type: 'input',
+	name: 'units',
+	message: 'How many units do you wish to purchase?',
+	validate: function(requestedUnits){
+		return parseInt(requestedUnits) >= 0 ? true : 'Please enter a valid number of units.';
+	}
+}]).then(function(answers){
+```
 
+Then pull the data from the products table associated with the requested item ID:
+```
+connection.query('SELECT * FROM products WHERE item_id = ?', [answers.productID], function(err, response){
+```
 
+After the customer's purchase transaction is complete, update the products table. For the same item id, update the depleted stock quantity, and update the product sales for that item.
+```
+connection.query('UPDATE products SET stock_quantity = ?, product_sales = ? WHERE item_id = ?', [updatedQuantity, updatedProductSales, answers.productID], function(err, response){
+```
+
+Finally, after a successful customer purchase, update the total sales for the appropriate department in the departments table:
+```
+connection.query('SELECT total_sales FROM departments WHERE department_name = ?', [departmentSelected], function(error, response){
+if (error) throw error;
+var updatedDeptSales = response[0].total_sales + totalCost;
+connection.query('UPDATE departments SET total_sales = ? WHERE department_name = ?',[updatedDeptSales, departmentSelected], function(error, response){
+```
 
 
 
@@ -92,7 +135,7 @@ function awesomeThing() {
     //...
 }
 ```
-Video link of a "light" demonstration of this application available upon request.
+Video link to a "light" demonstration of this application available upon request.
 
 ## Authors
 
