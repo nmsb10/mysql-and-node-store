@@ -123,8 +123,9 @@ function addToInventory(){
 			name: 'quantity',
 			message: 'Please specify the quantity to increase inventory for this item: ',
 			validate: function(value) {
+				//also make sure manager CANNOT add negative inventory
 				//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
-				return isNaN(value) ? 'Please enter a valid quantity.' : true;
+				return isNaN(value) || value < 0 ? 'Please enter a valid quantity.' : true;
 			}	
 		}]).then(function(choice){
 			//console.log(choice.addMore.indexOf(' |'));
@@ -247,6 +248,7 @@ function deleteProduct(){
 			var item = 'product ID: ' + response[i].item_id + ' | product: ' + response[i].product_name + ' | qty avail: ' + response[i].stock_quantity + ' | price: $' + response[i].price;
 			inventoryArray.push(item);
 		}
+		inventoryArray.push('DON\'T DELETE ANYTHING');
 		inquirer.prompt(
 		{
 			type: 'list',
@@ -254,18 +256,22 @@ function deleteProduct(){
 			message: 'Please select the item you wish to delete:',
 			choices: inventoryArray
 		}).then(function(choice){
-			//console.log(choice.addMore.indexOf(' |'));
-			//this space will be at index 13 of the string if 1 digit number
-			//index 14 if 2 digit number
-			//index 15 if 3 digit number
-			//create variable parseInt from string splice to represent item_id
-			var itemNumber = parseInt(choice.delete.slice(12,choice.delete.indexOf(' |')));
-			//console.log('item number: ' + itemNumber);
-			connection.query('DELETE FROM products WHERE item_id = ?', [itemNumber], function(err, response){
-				if(err) throw err;
-				console.log('Success. You deleted product ' + itemNumber + '.');
+			if(choice.delete === 'DON\'T DELETE ANYTHING'){
 				searchAgain();
-			});
+			}else{
+				//console.log(choice.addMore.indexOf(' |'));
+				//this space will be at index 13 of the string if 1 digit number
+				//index 14 if 2 digit number
+				//index 15 if 3 digit number
+				//create variable parseInt from string splice to represent item_id
+				var itemNumber = parseInt(choice.delete.slice(12,choice.delete.indexOf(' |')));
+				//console.log('item number: ' + itemNumber);
+				connection.query('DELETE FROM products WHERE item_id = ?', [itemNumber], function(err, response){
+					if(err) throw err;
+					console.log('Success. You deleted product ' + itemNumber + '.');
+					searchAgain();
+				});
+			}
 		});
 	});
 }

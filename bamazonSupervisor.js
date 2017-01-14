@@ -74,7 +74,7 @@ function viewDeptSales(){
 }
 
 function createNewDept(){
-	inquirer.prompt(
+	inquirer.prompt([
 	{
 		type: 'input',
 		name: 'name',
@@ -82,54 +82,63 @@ function createNewDept(){
 		// validate: function(name){
 		// 	return deptNameExists(name) ? 'that department already exists. add a different department?' : true;
 		// }
-	}).then(function(dept){
-		connection.query('SELECT * FROM products GROUP BY department_name HAVING count(*) >= 1', function(err, response){
-			if(err) throw err;
-			var deptNames = [];
-			for(var i = 0; i<response.length; i++){
-				deptNames.push(response[i].department_name);
-			}
-			//there is a better way than this!!!
-			var exists = false;
-			for(var j = 0; j<deptNames.length; j++){
-				if(dept.name === deptNames[j]){
-					exists = true;
+	},
+	{
+		type: 'confirm',
+		name: 'enterDept',
+		message: 'Please confirm if you wish to create this new department: '
+	}]).then(function(dept){
+		if(dept.enterDept){
+			connection.query('SELECT * FROM products GROUP BY department_name HAVING count(*) >= 1', function(err, response){
+				if(err) throw err;
+				var deptNames = [];
+				for(var i = 0; i<response.length; i++){
+					deptNames.push(response[i].department_name);
 				}
-				//return proposedName === deptNames[j] ? true : false;
-			}
-			if(exists){
-				inquirer.prompt([
-				{
-					type: 'confirm',
-					name: 'tryAgain',
-					message: 'the department "' + dept.name + '" already exists. Try adding a different department?',
-				}]).then(function(answer){
-					if(answer.tryAgain){
-						createNewDept();
-					}else{
-						searchAgain();
+				//there is a better way than this!!!
+				var exists = false;
+				for(var j = 0; j<deptNames.length; j++){
+					if(dept.name === deptNames[j]){
+						exists = true;
 					}
-				});
-			}else{
-				inquirer.prompt(
-				{
-					type: 'input',
-					name: 'overheadcosts',
-					message: 'please enter the overhead costs related to department ' + dept.name + '.',
-					default: 5000,
-					validate: function(value) {
-					//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
-					return isNaN(value) ? 'Please enter a valid quantity.' : true;
-					}
-				}).then(function(complete){
-					connection.query('INSERT INTO departments (department_name, over_head_costs) VALUES (?, ?)', [dept.name, complete.overheadcosts], function(error, response){
-						if(error) throw error;
-						console.log('Thank you. New department: ' + dept.name + ' with overhead costs of $' + complete.overheadcosts + ' added.');
-						searchAgain();
+					//return proposedName === deptNames[j] ? true : false;
+				}
+				if(exists){
+					inquirer.prompt([
+					{
+						type: 'confirm',
+						name: 'tryAgain',
+						message: 'the department "' + dept.name + '" already exists. Try adding a different department?',
+					}]).then(function(answer){
+						if(answer.tryAgain){
+							createNewDept();
+						}else{
+							searchAgain();
+						}
 					});
-				});
-			}
-		});
+				}else{
+					inquirer.prompt(
+					{
+						type: 'input',
+						name: 'overheadcosts',
+						message: 'please enter the overhead costs related to department ' + dept.name + '.',
+						default: 5000,
+						validate: function(value) {
+						//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
+						return isNaN(value) ? 'Please enter a valid quantity.' : true;
+						}
+					}).then(function(complete){
+						connection.query('INSERT INTO departments (department_name, over_head_costs) VALUES (?, ?)', [dept.name, complete.overheadcosts], function(error, response){
+							if(error) throw error;
+							console.log('Thank you. New department: ' + dept.name + ' with overhead costs of $' + complete.overheadcosts + ' added.');
+							searchAgain();
+						});
+					});
+				}
+			});
+		}else{
+			searchAgain();
+		}
 	});
 }
 
