@@ -39,7 +39,7 @@ function customerView(){
 			message: 'Please specify the product ID of the item you wish to purchase: ',
 			validate: function(requestedID){
 				for(var i = 0; i<response.length; i++){
-					if(requestedID == parseInt(response[i].item_id)){
+					if(parseInt(requestedID) === parseInt(response[i].item_id)){
 						return true;
 					}
 				}

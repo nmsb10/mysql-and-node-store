@@ -65,8 +65,8 @@ function viewDeptSales(){
 		if(error) throw error;
 		table.push(['dept. ID', 'dept. name', 'overhead costs', 'total sales', 'profit']);
 		for (var i = 0; i< response.length; i++){
-			var profit = response[i].total_sales - response[i].over_head_costs;
-			table.push([response[i].department_id, response[i].department_name, response[i].over_head_costs, response[i].total_sales, profit]);
+			var profit = (response[i].total_sales - response[i].over_head_costs).toFixed(2);
+			table.push([response[i].department_id, response[i].department_name, response[i].over_head_costs, response[i].total_sales, '$'+ profit]);
 		}
 		console.log(table.toString());
 		searchAgain();
@@ -130,7 +130,6 @@ function createNewDept(){
 				});
 			}
 		});
-		
 	});
 }
 
