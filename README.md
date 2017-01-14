@@ -123,7 +123,106 @@ connection.query('UPDATE departments SET total_sales = ? WHERE department_name =
 ```
 
 
+### manager
 
+The mySQL code for creating the new departments table. Also added the new product_sales column to the products table.
+```
+CREATE TABLE departments (
+  department_id INT(9) AUTO_INCREMENT NOT NULL,
+  department_name VARCHAR(100) NOT NULL,
+  over_head_costs INT(10) NOT NULL default 0,
+  total_sales DECIMAL(12,2) NOT NULL default 0.00,
+  PRIMARY KEY (department_id)
+);
+
+ALTER TABLE products ADD product_sales DECIMAL(12,2) default 0.00;
+
+INSERT INTO departments(department_name, over_head_costs) VALUES
+('artwork', 7000),
+('booze', 10000),
+('clothing', 5000),
+('electronics',35000),
+('experiences',50000),
+('fruits',3500),
+('garden',7800),
+('grocery', 13800),
+('office supplies', 2500),
+('pets', 8000),
+('vegetables', 3500);
+```
+
+Make a function so the manager had a choice of tasks:
+```
+function managerView(){
+	inquirer.prompt({
+		type: 'list',
+		name: 'request',
+		message: 'Welcome. What brings you to bManager today?',
+		choices: [
+		'view products for sale',
+		'view low inventory',
+		'add to inventory',
+		'add a new product',
+		'delete a product'
+		]
+	}).then(function(decision){
+		switch(decision.request){
+			case 'view products for sale':
+				viewProducts();
+				break;
+			case 'view low inventory':
+				viewLowInventory();
+				break;
+			case 'add to inventory':
+				addToInventory();
+				break;
+			case 'add a new product':
+				addANewProduct();
+				break;
+			case 'delete a product':
+				deleteProduct();
+				break;
+			default:
+				console.log('unknown request. try again.');
+				break;
+		}
+	});
+}
+```
+
+If the manager wants to view low inventory:
+```
+connection.query('SELECT * FROM products WHERE stock_quantity <= ?', [inventory.maxQuantity], function(error, response){
+```
+
+When the manager wans to add inventory for a particular product:
+```
+connection.query('SELECT * FROM products WHERE item_id = ?', [itemNumber], function(err, response){
+	if(err) throw err;
+	var updatedQuantity = parseInt(response[0].stock_quantity) + parseInt(choice.quantity);
+	connection.query('UPDATE products SET stock_quantity = ? WHERE item_id = ?', [updatedQuantity, itemNumber], function(error, response){
+		if(error) throw error;
+		console.log('confirm quantity updated:');
+		connection.query('SELECT * FROM products WHERE item_id = ?', [itemNumber], function(err, response){
+			if(err) throw error;
+			console.log('product ID: ' + response[0].item_id + ' | product: ' + response[0].product_name + ' | QTY AVAIL: ' + response[0].stock_quantity + ' | price: $' + response[0].price);
+			searchAgain();
+		});
+	});
+});
+```
+
+When adding a new product, I realized it was important to confirm whether or not the department specified for the new product already existed. If the department did NOT exist, then the new department had to also be added to the departments table. After using inquirer to obtain the overhead costs associated with this new product's new department:
+```
+connection.query('INSERT INTO departments (department_name, over_head_costs) VALUES (?, ?)', [dept.name, complete.overheadcosts], function(error, response){
+```
+
+Then also insert the new item into the products table:
+```
+connection.query('INSERT INTO products (product_name, stock_quantity, price, department_name) VALUES (?, ?, ?, ?)', [input.name, input.stockQuantity, input.price, input.department.toLowerCase()], function(err, response){
+```
+
+### supervisor
 
 
 
