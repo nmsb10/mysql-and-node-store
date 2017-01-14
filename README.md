@@ -24,7 +24,66 @@ What to install and how
 ```
 
 ## Review of the code
-For Project presentation, you can include snippets of code you found buggy, interesting, or are overall proud of here.  Try to limit the quantity and size to quick readable bits.
+A few items for your consideration.
+
+### initial mySQL code
+```
+CREATE database Bamazon;
+
+USE Bamazon;
+
+CREATE TABLE products (
+  item_id INT(9) AUTO_INCREMENT NOT NULL,
+  product_name VARCHAR(100) NOT NULL,
+  department_name VARCHAR(100) NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  stock_quantity INT(10) NOT NULL,
+  PRIMARY KEY (item_id)
+);
+
+INSERT INTO products(product_name, department_name, price, stock_quantity)
+VALUES ('rock', 'pets', 5.95, 15),
+('pomegranate', 'fruits', 1.99, 10),
+('kiwi', 'fruits', 0.75, 25),
+('broccoli', 'vegetables', 2.99, 12),
+(etc);
+```
+
+### customer
+
+First create a mysql connection:
+```
+var connection = mysql.createConnection({
+	host: 'localhost',
+	port: 3306,
+	user: 'yourUsername',
+	password: 'yourPassword',
+	database: 'Bamazon'
+});
+```
+
+Then connect to the mySQL database we created:
+```
+connection.connect(function(err){
+	if(err) throw err;
+	customerView();
+});
+```
+
+Then display all items from the products table:
+```
+function customerView(){
+	connection.query('SELECT * FROM products', function(err, response){
+```
+
+
+
+
+
+
+
+
+
 
 ```
 function awesomeThing() {
@@ -33,6 +92,7 @@ function awesomeThing() {
     //...
 }
 ```
+Video link of a "light" demonstration of this application available upon request.
 
 ## Authors
 
