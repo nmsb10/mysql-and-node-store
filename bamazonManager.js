@@ -152,152 +152,89 @@ function addToInventory(){
 }
 
 function addANewProduct(){
-	// If a manager selects Add New Product, it should allow the manager to add a completely new product to the store.
-	inquirer.prompt([
-	{
-		type: 'input',
-		name: 'name',
-		message: 'product name: '
-	},
-	{
-		type: 'input',
-		name: 'stockQuantity',
-		message: 'initial stock quantity: ',
-		validate: function(value) {
-			//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
-			//return isNaN(value) ? 'Please enter a valid quantity.' : true;
-			if(value > 0 && parseInt(value)){
-				return true;
-			}else{
-				return 'Please enter a valid quantity.';
+	//first create array of all department names
+	var deptNames = [];
+	connection.query('SELECT * FROM products GROUP BY department_name HAVING count(*) >= 0', function(err, response){
+		if(err) throw err;
+		for(var i = 0; i<response.length; i++){
+			deptNames.push(response[i].department_name);
+		}
+		deptNames.push('NEW DEPARTMENT');	
+		// If a manager selects Add New Product, it should allow the manager to add a completely new product to the store.
+		inquirer.prompt([
+		{
+			type: 'input',
+			name: 'name',
+			message: 'product name: '
+		},
+		{
+			type: 'input',
+			name: 'stockQuantity',
+			message: 'initial stock quantity: ',
+			validate: function(value) {
+				//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
+				//return isNaN(value) ? 'Please enter a valid quantity.' : true;
+				if(value > 0 && parseInt(value)){
+					return true;
+				}else{
+					return 'Please enter a valid quantity.';
+				}
 			}
-		}
-	},
-	{
-		type: 'input',
-		name: 'price',
-		message: 'product price (no commas): ',
-		//should validate price is a float
-		validate: function(value) {
-			return parseFloat(value) && value > 0 ? true : 'Please enter a valid price.';
-		}
-	},
-	{
-		type: 'input',
-		name: 'department',
-		message: 'department name: '
-	},
-	{
-		type: 'confirm',
-		name: 'enterProduct',
-		message: 'create a new product with the information you entered?'
-	},
-	{
-		type: 'confirm',
-		name: 'addAnotherProduct',
-		message: 'would you like to add another product?'
-	}]).then(function(input){
-		if(input.enterProduct && input.addAnotherProduct){
-			//check if the department exists already. if the department exists, manager must add department and details to departments table. if it exists, no need to change departments table
-			connection.query('SELECT * FROM products GROUP BY department_name HAVING count(*) >= 1', function(err, response){
-				if(err) throw err;
-				var deptNames = [];
-				for(var i = 0; i<response.length; i++){
-					deptNames.push(response[i].department_name);
-				}
-				//there is a better way than this!!!
-				var exists = false;
-				for(var j = 0; j<deptNames.length; j++){
-					if(input.department === deptNames[j]){
-						exists = true;
-					}
-					//return proposedName === deptNames[j] ? true : false;
-				}
-				//if the department exists:
-				if(exists){
-					connection.query('INSERT INTO products (product_name, stock_quantity, price, department_name) VALUES (?, ?, ?, ?)', [input.name, input.stockQuantity, input.price, input.department.toLowerCase()], function(err, response){
+		},
+		{
+			type: 'input',
+			name: 'price',
+			message: 'product price (no commas): ',
+			//should validate price is a float
+			validate: function(value) {
+				return parseFloat(value) && value > 0 ? true : 'Please enter a valid price.';
+			}
+		},
+		{
+			type: 'list',
+			name: 'department',
+			message: 'select the department name: ',
+			choices: deptNames
+		},
+		{
+			type: 'confirm',
+			name: 'enterProduct',
+			message: 'create a new product with the information you entered?'
+		},
+		{
+			type: 'confirm',
+			name: 'addAnotherProduct',
+			message: 'would you like to add another product?'
+		}]).then(function(input){
+			if(input.enterProduct && input.addAnotherProduct){
+				//manager may NOT add the product if they selected department 'new department'
+				if(input.department === 'NEW DEPARTMENT'){
+					console.log('Please ask the Supervisor to add your department.\nThen you may add the new product.');
+					addANewProduct();
+				}else{//otherwise, manager selected an existing department
+					connection.query('INSERT INTO products (product_name, stock_quantity, price, department_name) VALUES (?, ?, ?, ?)', [input.name, input.stockQuantity, input.price, input.department], function(err, response){
 						if(err) throw err;
 						console.log('confirm product added: ' + input.name + ' | ' + input.stockQuantity + ' units | $' +  input.price + ' | department: ' +  input.department);
 						addANewProduct();
 					});
-				//if the department for the new product does not exist:
-				}else{
-				inquirer.prompt(
-				{
-					type: 'input',
-					name: 'overheadcosts',
-					message: 'department ' + input.department + ' does not exist. We will add it now. Please enter the overhead costs related to this new department:',
-					default: 5000,
-					validate: function(value) {
-					//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
-					return isNaN(value) ? 'Please enter a valid quantity.' : true;
-					}
-				}).then(function(complete){
-					connection.query('INSERT INTO departments (department_name, over_head_costs) VALUES (?, ?)', [input.department, complete.overheadcosts], function(error, response){
-						if(error) throw error;
-						console.log('Thank you. New department: ' + input.department + ' with overhead costs of $' + complete.overheadcosts + ' added.');
-						connection.query('INSERT INTO products (product_name, stock_quantity, price, department_name) VALUES (?, ?, ?, ?)', [input.name, input.stockQuantity, input.price, input.department.toLowerCase()], function(err, response){
-							if(err) throw err;
-							console.log('confirm product added: ' + input.name + ' | ' + input.stockQuantity + ' units | $' +  input.price + ' | department: ' +  input.department);
-							addANewProduct();
-							});
-						});
-					});
 				}
-			});	
-		}else if(!input.enterProduct && input.addAnotherProduct){
-			addANewProduct();
-		}else if(input.enterProduct && !input.addAnotherProduct){
-			//check if the department exists already. if the department exists, manager must add department and details to departments table. if it exists, no need to change departments table
-			connection.query('SELECT * FROM products GROUP BY department_name HAVING count(*) >= 1', function(err, response){
-				if(err) throw err;
-				var deptNames = [];
-				for(var i = 0; i<response.length; i++){
-					deptNames.push(response[i].department_name);
-				}
-				//there is a better way than this!!!
-				var exists = false;
-				for(var j = 0; j<deptNames.length; j++){
-					if(input.department === deptNames[j]){
-						exists = true;
-					}
-					//return proposedName === deptNames[j] ? true : false;
-				}
-				//if the department exists:
-				if(exists){
-					connection.query('INSERT INTO products (product_name, stock_quantity, price, department_name) VALUES (?, ?, ?, ?)', [input.name, input.stockQuantity, input.price, input.department.toLowerCase()], function(err, response){
+			}else if(input.enterProduct && !input.addAnotherProduct){
+				if(input.department === 'NEW DEPARTMENT'){
+					console.log('Please ask the Supervisor to add your department.\nThen you may add the new product.');
+					searchAgain();
+				}else{//otherwise, manager selected an existing department
+					connection.query('INSERT INTO products (product_name, stock_quantity, price, department_name) VALUES (?, ?, ?, ?)', [input.name, input.stockQuantity, input.price, input.department], function(err, response){
 						if(err) throw err;
 						console.log('confirm product added: ' + input.name + ' | ' + input.stockQuantity + ' units | $' +  input.price + ' | department: ' +  input.department);
 						searchAgain();
 					});
-				//if the department for the new product does not exist:
-				}else{
-				inquirer.prompt(
-				{
-					type: 'input',
-					name: 'overheadcosts',
-					message: 'department ' + input.department + ' does not exist. We will add it now. Please enter the overhead costs related to this new department:',
-					default: 5000,
-					validate: function(value) {
-					//http://stackoverflow.com/questions/175739/is-there-a-built-in-way-in-javascript-to-check-if-a-string-is-a-valid-number
-					return isNaN(value) ? 'Please enter a valid quantity.' : true;
-					}
-				}).then(function(complete){
-					connection.query('INSERT INTO departments (department_name, over_head_costs) VALUES (?, ?)', [input.department, complete.overheadcosts], function(error, response){
-						if(error) throw error;
-						console.log('Thank you. New department: ' + dept.name + ' with overhead costs of $' + complete.overheadcosts + ' added.');
-						connection.query('INSERT INTO products (product_name, stock_quantity, price, department_name) VALUES (?, ?, ?, ?)', [input.name, input.stockQuantity, input.price, input.department.toLowerCase()], function(err, response){
-							if(err) throw err;
-							console.log('confirm product added: ' + input.name + ' | ' + input.stockQuantity + ' units | $' +  input.price + ' | department: ' +  input.department);
-							searchAgain();
-							});
-						});
-					});
 				}
-			});	
-		}else if(!input.enterProduct && !input.addAnotherProduct){
-			searchAgain();
-		}
+			}else if(!input.enterProduct && input.addAnotherProduct){
+				addANewProduct();
+			}else if(!input.enterProduct && !input.addAnotherProduct){
+				searchAgain();
+			}
+		});
 	});
 }
 
